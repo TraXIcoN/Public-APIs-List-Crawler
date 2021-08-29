@@ -1,30 +1,32 @@
 const fs = require("fs");
 const fetch_file = require("./fetch_data");
+
+//Instantiating the GetResults class to access it's methods
 let fetch = new fetch_file();
 
-/*
-app.get("/getres", async (req, res, next) => {
-  var result_token = await fetch.getToken();
-  console.log(result_token, "YAYYYYYYYYYY");
-});
-
-app.get("/getcat", async (req, res, next) => {
-  var categories = await fetch.promiseCategories(1);
-  console.log(categories, "YOOOOOOO");
-}); */
-
+//Main function
 async function main() {
+  //Get token and store it as a global variable
   await fetch.getToken();
   await fetch.sleep(6000);
+
+  //Get list of categories
   const response = await fetch.getCategories(1);
   console.log("FINAL LIST OF CATEGORIES COLLECTED!");
+
+  //Get list of subcategories w.r.t categories
   const final_response = await fetch.getCategoriesContent(response, 0, 1);
   console.log("FINAL LIST OF SUBCATEGORIES COLLECTED");
+
+  //Save the results to a json file
   await saveJson(final_response);
 }
 
+//Function for saving results to a json file
 async function saveJson(final_object) {
   var result = {};
+
+  //Converting into a desirable format for converting the result object into JSON object
   for (var i = 0; i < final_object.length; i++) {
     let key = Object.keys(final_object[i]);
     if (result[key]) {
@@ -34,6 +36,8 @@ async function saveJson(final_object) {
     }
   }
   console.log("ALL DATA COLLECTED!");
+
+  //Using fs module to save the JSON object as a JSON file
   fs.writeFile(
     "scrapped_data.json",
     JSON.stringify(result),
