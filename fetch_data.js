@@ -3,23 +3,13 @@ const fetch = require("node-fetch");
 
 //Define Global variables here
 var BASE_URL = "https://public-apis-api.herokuapp.com/api/v1/";
-LIMIT = 9;
-RATE = Math.floor(60 / (LIMIT + 1));
-//Calculate the rate of sending requests
 
 //Global token object
 TOKEN = "";
 
-//Enable logging
-
 //Fetch results
 class GetResults {
-  constructor(limit, rate) {
-    this.limit = limit;
-    this.rate = rate;
-    this.categories = [];
-  }
-
+  //This is an asynchronous function intended for inducing sleep in code execution
   sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -59,27 +49,20 @@ class GetResults {
     }
   }
 
-  //Function for storing it in an array of objects
-  helperObject(data, cat) {
-    var output = [];
-    if (output[cat]) {
-      output[cat] = [...output[cat], ...data];
-    } else {
-      output[cat] = data;
-    }
-    console.log(output);
-    return output;
-  }
-
   //Function for getting categories content
   async getCategoriesContent(categories, categoryNo, page) {
+    //Defining url pattern for getting list of categories
     let url =
       BASE_URL + `apis/entry?page=${page}&category=${categories[categoryNo]}`;
     console.log("Request category : " + categoryNo + " : " + url);
+
+    //Making Get request by using fetch
     const response = await fetch(url, {
       headers: { Authorization: "Bearer= " + TOKEN },
     });
+
     const status = response.status;
+
     //If we don't get a status of 200
     if (status != 200) {
       if (status == 429) {
@@ -93,7 +76,8 @@ class GetResults {
           this.getToken();
         }, 100);
         await this.sleep(6000);
-        // const data_arr = this.helperObject([], categories[categoryNo]);
+
+        //Calling recusively with same parameters and concatenating with emty array to maintain the return type as array
         return [].concat(
           await this.getCategoriesContent(categories, categoryNo, page)
         );
@@ -101,28 +85,32 @@ class GetResults {
     } else {
       // If we get a status of 200
       const data = await response.json();
+
+      //Reformatting data in a form that can be easily converted to JSON object
       const data_set = {};
       data_set[categories[categoryNo]] = data["categories"];
       const data_arr = [data_set];
+
+      //Checking whether there are more entries for the same category or not
       if (data["count"] - 10 * page >= 0) {
         await this.sleep(6000);
         return data_arr.concat(
           await this.getCategoriesContent(categories, categoryNo, page + 1)
         );
       } else {
+        //Checking if the maximim category amount has been reached or not
         if (categoryNo < categories.length) {
           await this.sleep(6000);
           return data_arr.concat(
             await this.getCategoriesContent(categories, categoryNo + 1, 1)
           );
         } else {
+          //if limit is reached then just return the current object of subcategories
           await this.sleep(6000);
           return data_arr;
         }
       }
     }
   }
-
-  async request() {}
 }
 module.exports = GetResults;
